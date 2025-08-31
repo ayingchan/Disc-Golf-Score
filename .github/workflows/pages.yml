@@ -21,8 +21,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Optional but nice: avoid Jekyll processing
-      - name: Add .nojekyll and SPA 404
+      - name: Add .nojekyll and 404
         run: |
           touch .nojekyll
           if [ -f "index.html" ]; then cp index.html 404.html; fi
@@ -30,7 +29,7 @@ jobs:
       - name: Upload site files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .    # 🚨 uploads the repo root (where index.html is)
+          path: .   # Upload repo root (where index.html is)
 
       - name: Deploy to GitHub Pages
         id: deployment
