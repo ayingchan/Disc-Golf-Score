@@ -13,7 +13,541 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        // Paste your React component code here
+      import React, { useState, useEffect } from ‘react’;
+import { Plus, Minus, Users, RotateCcw, Trophy, Target, ChevronDown } from ‘lucide-react’;
+
+const DiscGolfScorecard = () => {
+const [players, setPlayers] = useState([]);
+const [newPlayerName, setNewPlayerName] = useState(’’);
+const [currentHole, setCurrentHole] = useState(1);
+const [scores, setScores] = useState({});
+const [coursePar, setCoursePar] = useState({});
+const [gameStarted, setGameStarted] = useState(false);
+const [numHoles, setNumHoles] = useState(18);
+const [useParMode, setUseParMode] = useState(false);
+const [enterParDuringRound, setEnterParDuringRound] = useState(true);
+const [newGameProgress, setNewGameProgress] = useState(0);
+const [isHoldingNewGame, setIsHoldingNewGame] = useState(false);
+const [newGameInterval, setNewGameInterval] = useState(null);
+const [isTransitioning, setIsTransitioning] = useState(false);
+
+useEffect(() => {
+if (useParMode && !enterParDuringRound) {
+const defaultPar = {};
+for (let i = 1; i <= numHoles; i++) {
+defaultPar[i] = 3;
+}
+setCoursePar(defaultPar);
+} else {
+setCoursePar({});
+}
+}, [numHoles, useParMode, enterParDuringRound]);
+
+const addPlayer = () => {
+if (newPlayerName.trim() && !gameStarted) {
+const newPlayer = { id: Date.now(), name: newPlayerName.trim() };
+setPlayers([…players, newPlayer]);
+setNewPlayerName(’’);
+
+```
+  const newScores = { ...scores };
+  newScores[newPlayer.id] = {};
+  for (let hole = 1; hole <= numHoles; hole++) {
+    newScores[newPlayer.id][hole] = (!useParMode || enterParDuringRound) ? 0 : (coursePar[hole] || 3);
+  }
+  setScores(newScores);
+}
+```
+
+};
+
+const removePlayer = (playerId) => {
+if (!gameStarted) {
+setPlayers(players.filter(p => p.id !== playerId));
+const newScores = { …scores };
+delete newScores[playerId];
+setScores(newScores);
+}
+};
+
+const updateScore = (playerId, hole, change) => {
+const newScores = { …scores };
+const currentScore = newScores[playerId][hole] || ((!useParMode || enterParDuringRound) ? 0 : (coursePar[hole] || 3));
+const newScore = Math.max((!useParMode || enterParDuringRound) ? 0 : 1, currentScore + change);
+newScores[playerId][hole] = newScore;
+setScores(newScores);
+};
+
+const updatePar = (hole, newPar) => {
+if (useParMode && newPar >= 2 && newPar <= 6) {
+const newCoursePar = { …coursePar };
+newCoursePar[hole] = newPar;
+setCoursePar(newCoursePar);
+
+```
+  if (!gameStarted) {
+    const newScores = { ...scores };
+    players.forEach(player => {
+      if (newScores[player.id]) {
+        newScores[player.id][hole] = newPar;
+      }
+    });
+    setScores(newScores);
+  }
+}
+```
+
+};
+
+const getTotalScore = (playerId) => {
+if (!scores[playerId]) return 0;
+return Object.values(scores[playerId]).reduce((sum, score) => sum + score, 0);
+};
+
+const getScoreToPar = (playerId) => {
+if (!useParMode) return 0;
+const totalScore = getTotalScore(playerId);
+const totalPar = Object.values(coursePar).reduce((sum, par) => sum + par, 0);
+return totalScore - totalPar;
+};
+
+const getScoreDisplay = (score) => {
+if (score === 0) return ‘E’;
+return score > 0 ? `+${score}` : score.toString();
+};
+
+const getLeaderboard = () => {
+return players.map(player => ({
+…player,
+totalScore: getTotalScore(player.id),
+scoreToPar: getScoreToPar(player.id)
+})).sort((a, b) => a.totalScore - b.totalScore);
+};
+
+const goToNextHole = () => {
+if (currentHole < numHoles) {
+setIsTransitioning(true);
+setTimeout(() => {
+setCurrentHole(currentHole + 1);
+setIsTransitioning(false);
+window.scrollTo({ top: 0, behavior: ‘smooth’ });
+}, 150);
+}
+};
+
+const goToPreviousHole = () => {
+if (currentHole > 1) {
+setIsTransitioning(true);
+setTimeout(() => {
+setCurrentHole(currentHole - 1);
+setIsTransitioning(false);
+window.scrollTo({ top: 0, behavior: ‘smooth’ });
+}, 150);
+}
+};
+
+const resetGame = () => {
+setPlayers([]);
+setScores({});
+setCurrentHole(1);
+setGameStarted(false);
+setNewPlayerName(’’);
+setNumHoles(18);
+setUseParMode(false);
+setEnterParDuringRound(false);
+setNewGameProgress(0);
+setIsHoldingNewGame(false);
+setIsTransitioning(false);
+if (newGameInterval) {
+clearInterval(newGameInterval);
+setNewGameInterval(null);
+}
+};
+
+const handleNewGameStart = () => {
+setIsHoldingNewGame(true);
+setNewGameProgress(0);
+
+```
+const interval = setInterval(() => {
+  setNewGameProgress(prev => {
+    const newProgress = prev + (100 / 30);
+    if (newProgress >= 100) {
+      clearInterval(interval);
+      setNewGameInterval(null);
+      resetGame();
+      return 0;
+    }
+    return newProgress;
+  });
+}, 100);
+
+setNewGameInterval(interval);
+```
+
+};
+
+const handleNewGameEnd = () => {
+setIsHoldingNewGame(false);
+setNewGameProgress(0);
+if (newGameInterval) {
+clearInterval(newGameInterval);
+setNewGameInterval(null);
+}
+};
+
+const startGame = () => {
+if (players.length > 0) {
+setGameStarted(true);
+}
+};
+
+const s = { fontFamily: ‘“Arial Black”, sans-serif’ };
+
+if (!gameStarted) {
+return (
+<div className=“min-h-screen p-4” style={{ background: ‘#6B46C1’, …s }}>
+<div className="max-w-4xl mx-auto">
+<div className=“p-6 mb-6” style={{ background: ‘#F59E0B’, border: ‘6px solid #000’, borderRadius: ‘25px’, boxShadow: ‘8px 8px 0px #333’ }}>
+<div className="text-center mb-6">
+<h1 className=“text-4xl font-black” style={{ color: ‘#000’, textShadow: ‘4px 4px 0px #FFF’ }}>DISC GOLF</h1>
+</div>
+
+```
+        <div className="mb-6">
+          <div className="grid grid-cols-2 sm:flex gap-2 justify-center mb-4">
+            {[9, 18, 27, 36].map((holes) => (
+              <button key={holes} onClick={() => setNumHoles(holes)} className="px-3 sm:px-4 py-2 text-sm sm:text-lg font-black whitespace-nowrap transform transition-all duration-150 hover:scale-105 active:scale-95 hover:shadow-lg active:shadow-sm"
+                style={{ 
+                  background: numHoles === holes ? '#EC4899' : '#FFF', 
+                  color: '#000', 
+                  border: '3px solid #000', 
+                  borderRadius: '15px', 
+                  boxShadow: numHoles === holes ? '4px 4px 0px #000' : '2px 2px 0px #333' 
+                }}
+                onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+                onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+                onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+                onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+                {holes} HOLES
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row justify-center mb-4 transform transition-all duration-200 hover:scale-105" style={{ background: '#FFF', border: '3px solid #000', borderRadius: '15px', boxShadow: '3px 3px 0px #000', overflow: 'hidden' }}>
+            <button onClick={() => setUseParMode(false)} className="px-4 py-2 text-sm sm:text-base font-black whitespace-nowrap border-b-2 sm:border-b-0 sm:border-r-2 border-black transition-all duration-150 hover:bg-opacity-80"
+              style={{ background: !useParMode ? '#EC4899' : 'transparent', color: '#000' }}
+              onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+              onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+              onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+              onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+              NO PAR
+            </button>
+            <button onClick={() => setUseParMode(true)} className="px-4 py-2 text-sm sm:text-base font-black whitespace-nowrap transition-all duration-150 hover:bg-opacity-80"
+              style={{ background: useParMode ? '#EC4899' : 'transparent', color: '#000' }}
+              onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+              onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+              onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+              onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+              WITH PAR
+            </button>
+          </div>
+
+          {useParMode && (
+            <div className="mb-4">
+              <div className="flex justify-center mb-4 transform transition-all duration-200 hover:scale-105 gap-1 p-1" style={{ background: '#FFF', border: '2px solid #000', borderRadius: '10px', boxShadow: '2px 2px 0px #000' }}>
+                <button onClick={() => setEnterParDuringRound(true)} className="px-3 sm:px-4 py-2 font-black text-xs sm:text-sm whitespace-nowrap transition-all duration-150 hover:bg-opacity-80"
+                  style={{ background: enterParDuringRound ? '#EC4899' : '#E5E7EB', color: '#000', border: enterParDuringRound ? '2px solid #000' : '2px solid transparent', borderRadius: '6px', boxShadow: enterParDuringRound ? '2px 2px 0px #000' : 'none' }}
+                  onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+                  onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+                  onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+                  DURING ROUND
+                </button>
+                <button onClick={() => setEnterParDuringRound(false)} className="px-3 sm:px-4 py-2 font-black text-xs sm:text-sm whitespace-nowrap transition-all duration-150 hover:bg-opacity-80"
+                  style={{ background: !enterParDuringRound ? '#EC4899' : '#E5E7EB', color: '#000', border: !enterParDuringRound ? '2px solid #000' : '2px solid transparent', borderRadius: '6px', boxShadow: !enterParDuringRound ? '2px 2px 0px #000' : 'none' }}
+                  onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+                  onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+                  onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+                  SET NOW
+                </button>
+              </div>
+              
+              {!enterParDuringRound && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {[...Array(numHoles)].map((_, i) => {
+                    const hole = i + 1;
+                    return (
+                      <div key={hole} className="text-center">
+                        <div className="text-xs sm:text-sm font-black mb-2" style={{ color: '#000' }}>HOLE {hole}</div>
+                        <div className="flex gap-1 justify-center">
+                          {[2, 3, 4, 5, 6].map((par) => (
+                            <button key={par} onClick={() => updatePar(hole, par)} className="w-6 h-6 sm:w-8 sm:h-8 text-xs font-black transform transition-all duration-150 hover:scale-110 active:scale-90"
+                              style={{ background: (coursePar[hole] || 3) === par ? '#EC4899' : '#FFF', color: '#000', border: '2px solid #000', borderRadius: '6px', boxShadow: (coursePar[hole] || 3) === par ? '2px 2px 0px #000' : '1px 1px 0px #333' }}>
+                              {par}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} 
+            onKeyPress={(e) => e.key === 'Enter' && addPlayer()} placeholder="Enter name..."
+            className="w-full px-4 py-3 mb-3 text-lg font-black text-center"
+            style={{ background: '#FFF', color: '#000', border: '4px solid #000', borderRadius: '15px', boxShadow: '4px 4px 0px #333', outline: 'none', ...s }} />
+          
+          <button onClick={addPlayer} className="w-full px-4 py-3 text-lg font-black mb-4 transform transition-all duration-150 hover:scale-105 active:scale-95"
+            style={{ background: players.length > 0 ? '#EC4899' : '#10B981', color: '#000', border: '4px solid #000', borderRadius: '15px', boxShadow: '4px 4px 0px #000' }}
+            onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+            onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+            onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+            onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+            <Users className="inline mr-2 transform transition-transform duration-200" style={{ width: '20px', height: '20px' }} />
+            ADD PLAYER
+          </button>
+
+          {players.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {players.map(player => (
+                <div key={player.id} className="flex justify-between items-center p-3"
+                  style={{ background: '#FDE68A', border: '3px solid #000', borderRadius: '10px', boxShadow: '2px 2px 0px #000' }}>
+                  <span className="font-black" style={{ color: '#000' }}>{player.name}</span>
+                  <button onClick={() => removePlayer(player.id)} className="px-3 py-1 text-sm font-black transform transition-all duration-150 hover:scale-110 active:scale-90"
+                    style={{ background: '#EC4899', color: '#000', border: '2px solid #000', borderRadius: '8px', boxShadow: '2px 2px 0px #000' }}
+                    onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+                    onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+                    onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+                    onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+                    REMOVE
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {players.length > 0 && (
+            <button onClick={startGame} className="w-full px-6 py-4 text-2xl font-black transform transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{ background: '#10B981', color: '#000', border: '6px solid #000', borderRadius: '20px', boxShadow: '6px 6px 0px #000' }}
+              onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+              onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+              onMouseDown={(e) => e.target.style.filter = 'brightness(0.9)'}
+              onMouseUp={(e) => e.target.style.filter = 'brightness(1.1)'}>
+              START ROUND
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+```
+
+}
+
+return (
+<div className=“min-h-screen p-4 relative overflow-hidden” style={{ background: ‘#6B46C1’, …s }}>
+{isHoldingNewGame && (
+<>
+<div className=“fixed bottom-0 left-0 right-0 pointer-events-none z-30” style={{ height: `${newGameProgress * 3}px`, background: ‘#EC4899’, opacity: 0.8 }} />
+<div className=“fixed inset-0 pointer-events-none z-40” style={{ background: ‘#EC4899’, opacity: newGameProgress > 85 ? 0.4 : 0 }} />
+</>
+)}
+
+```
+  <div className="max-w-6xl mx-auto relative z-10">
+    <div className="p-4 mb-6" style={{ background: '#F59E0B', border: '4px solid #000', borderRadius: '20px', boxShadow: '6px 6px 0px #333' }}>
+      <div className="mb-4">
+        <div className="relative inline-block">
+          <select value={currentHole} onChange={(e) => setCurrentHole(parseInt(e.target.value))}
+            className="text-4xl font-black pr-12 bg-transparent border-none outline-none cursor-pointer"
+            style={{ WebkitAppearance: 'none', color: '#000', textShadow: '2px 2px 0px #FFF', ...s }}>
+            {[...Array(numHoles)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>HOLE {i + 1}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" 
+            style={{ width: '32px', height: '32px', color: '#000' }} />
+        </div>
+        <p className="text-lg font-black" style={{ color: '#000' }}>of {numHoles} holes</p>
+      </div>
+
+      {/* Fun Course Journey */}
+      <div className="mb-10 flex flex-wrap justify-center gap-3 sm:gap-4">
+        {[...Array(Math.min(Math.max(currentHole + 2, players.some(player => Object.keys(scores[player.id] || {}).some(h => parseInt(h) > currentHole && scores[player.id][h] > 0)) ? numHoles : currentHole + 2), numHoles))].map((_, i) => {
+          const hole = i + 1;
+          const isCompleted = scores && players.some(player => scores[player.id]?.[hole] > 0);
+          const isCurrent = hole === currentHole;
+          const isCurrentProgress = hole === Math.max(...players.flatMap(player => Object.keys(scores[player.id] || {}).filter(h => scores[player.id][h] > 0).map(Number)), 0) + 1;
+          const isDisabled = hole > Math.max(currentHole, Math.max(...players.flatMap(player => Object.keys(scores[player.id] || {}).filter(h => scores[player.id][h] > 0).map(Number)), 0)) && !isCompleted;
+          const icon = isCurrent ? '🥏' : isCurrentProgress && !isCurrent ? '🎯' : isCompleted ? '⛳' : '🌲';
+          return (
+            <button 
+              key={hole} 
+              onClick={() => !isDisabled && setCurrentHole(hole)}
+              disabled={isDisabled}
+              className={`relative w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl transform transition-all duration-300 ${
+                isCurrent ? 'scale-125 animate-bounce' : isCurrentProgress && !isCurrent ? 'scale-110 animate-pulse' : isDisabled ? 'opacity-60 cursor-not-allowed' : 'hover:scale-110 hover:rotate-12'
+              }`}
+              style={{ 
+                background: isCurrent ? '#F59E0B' : isCurrentProgress && !isCurrent ? '#FCD34D' : isCompleted ? '#10B981' : isDisabled ? '#E5E7EB' : '#FDE68A',
+                color: isDisabled ? '#9CA3AF' : '#000', 
+                border: isCurrent ? '4px solid #000' : '3px solid #000', 
+                borderRadius: '50%',
+                boxShadow: isCurrent ? '4px 4px 0px #000' : isDisabled ? 'none' : '3px 3px 0px #333'
+              }}>
+              <span className="block" style={{ filter: 'drop-shadow(2px 2px 0px #FFF)' }}>{icon}</span>
+              <span 
+                className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 text-xs font-black px-2 py-1 rounded"
+                style={{ 
+                  color: '#000',
+                  background: '#FFF',
+                  border: '2px solid #000',
+                  boxShadow: '2px 2px 0px #333',
+                  minWidth: '24px',
+                  textAlign: 'center'
+                }}>
+                {hole}
+              </span>
+            </button>
+          );
+        })}
+        
+        {/* Show "more holes coming" indicator */}
+        {Math.max(currentHole + 2, players.some(player => Object.keys(scores[player.id] || {}).some(h => parseInt(h) > currentHole && scores[player.id][h] > 0)) ? numHoles : currentHole + 2) < numHoles && (
+          <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+            <span className="text-2xl animate-pulse" style={{ filter: 'drop-shadow(2px 2px 0px #FFF)' }}>...</span>
+            <span 
+              className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 text-xs font-black px-2 py-1 rounded"
+              style={{ 
+                color: '#000',
+                background: '#FFF',
+                border: '2px solid #000',
+                boxShadow: '2px 2px 0px #333',
+                minWidth: '28px',
+                textAlign: 'center'
+              }}>
+              +{numHoles - Math.max(currentHole + 2, players.some(player => Object.keys(scores[player.id] || {}).some(h => parseInt(h) > currentHole && scores[player.id][h] > 0)) ? numHoles : currentHole + 2)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className={`p-4 transform transition-all duration-300 ${isTransitioning ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`} style={{ background: '#DBEAFE', border: '3px solid #000', borderRadius: '15px', boxShadow: '3px 3px 0px #333' }}>
+        {useParMode && enterParDuringRound && (
+          <div className="mb-4 p-3 transform transition-all duration-200 hover:scale-102" style={{ background: '#FDE68A', border: '3px solid #000', borderRadius: '10px' }}>
+            <h3 className="text-sm sm:text-lg font-black mb-3 text-center" style={{ color: '#000' }}>SET PAR FOR HOLE {currentHole}</h3>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {[2, 3, 4, 5, 6].map((par) => (
+                <button key={par} onClick={() => updatePar(currentHole, par)} className="px-3 sm:px-4 py-2 font-black text-sm sm:text-base transform transition-all duration-150 hover:scale-110 active:scale-90"
+                  style={{ background: (coursePar[currentHole] || 3) === par ? '#EC4899' : '#FFF', color: '#000', border: '2px solid #000', borderRadius: '8px', boxShadow: (coursePar[currentHole] || 3) === par ? '3px 3px 0px #000' : '2px 2px 0px #333' }}>
+                  PAR {par}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {players.map(player => {
+            const playerScore = scores[player.id]?.[currentHole] || ((!useParMode || enterParDuringRound) ? 0 : (coursePar[currentHole] || 3));
+            const scoreToPar = useParMode && coursePar[currentHole] ? playerScore - (coursePar[currentHole] || 3) : 0;
+            return (
+              <div key={player.id} className="flex items-center justify-between p-3 transform transition-all duration-200 hover:scale-102"
+                style={{ background: '#FDE68A', border: '3px solid #000', borderRadius: '10px', boxShadow: '3px 3px 0px #000' }}>
+                <div className="flex-1">
+                  <h3 className="text-lg sm:text-xl font-black" style={{ color: '#000' }}>{player.name}</h3>
+                  {useParMode && coursePar[currentHole] && (
+                    <div className="text-sm font-black" style={{ color: '#000' }}>
+                      {getScoreDisplay(scoreToPar)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button onClick={() => updateScore(player.id, currentHole, -1)} className="p-2 transform transition-all duration-150 hover:scale-110 active:scale-90 hover:rotate-12"
+                    style={{ background: '#EC4899', color: '#000', border: '3px solid #000', borderRadius: '8px', boxShadow: '2px 2px 0px #000' }}>
+                    <Minus style={{ width: '16px', height: '16px', sm: { width: '20px', height: '20px' } }} />
+                  </button>
+                  <span className="text-2xl sm:text-3xl font-black min-w-[2.5rem] sm:min-w-[3rem] text-center transition-all duration-200" style={{ color: '#000', textShadow: '2px 2px 0px #FFF' }}>
+                    {playerScore}
+                  </span>
+                  <button onClick={() => updateScore(player.id, currentHole, 1)} className="p-2 transform transition-all duration-150 hover:scale-110 active:scale-90 hover:-rotate-12"
+                    style={{ background: '#10B981', color: '#000', border: '3px solid #000', borderRadius: '8px', boxShadow: '2px 2px 0px #000' }}>
+                    <Plus style={{ width: '16px', height: '16px', sm: { width: '20px', height: '20px' } }} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-between items-center mt-6 gap-4">
+          <button onClick={goToPreviousHole} disabled={currentHole === 1}
+            className="px-4 py-2 font-black transform transition-all duration-150 hover:scale-105 active:scale-95" 
+            style={{ background: '#FFF', color: '#000', border: '3px solid #000', borderRadius: '10px', boxShadow: '2px 2px 0px #000', opacity: currentHole === 1 ? 0.5 : 1 }}>
+            ← PREVIOUS
+          </button>
+          <button onClick={goToNextHole} disabled={currentHole === numHoles}
+            className="px-4 py-2 font-black transform transition-all duration-150 hover:scale-105 active:scale-95" 
+            style={{ background: '#EC4899', color: '#000', border: '3px solid #000', borderRadius: '10px', boxShadow: '2px 2px 0px #000', opacity: currentHole === numHoles ? 0.5 : 1 }}>
+            NEXT →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div className="p-4" style={{ background: '#F59E0B', border: '4px solid #000', borderRadius: '20px', boxShadow: '6px 6px 0px #333' }}>
+      <div className="flex items-center mb-4">
+        <Trophy className="mr-3" style={{ width: '28px', height: '28px', color: '#000' }} />
+        <h2 className="text-2xl font-black" style={{ color: '#000', textShadow: '2px 2px 0px #FFF' }}>LEADERBOARD</h2>
+      </div>
+      <div className="space-y-2">
+        {getLeaderboard().map((player, index) => (
+          <div key={player.id} className="flex items-center justify-between p-3"
+            style={{ background: '#DBEAFE', border: '3px solid #000', borderRadius: '10px', boxShadow: '2px 2px 0px #000' }}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl font-black" style={{ color: '#000' }}>#{index + 1}</span>
+              <span className="text-xl font-black" style={{ color: '#000' }}>{player.name}</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black" style={{ color: '#000', textShadow: '2px 2px 0px #FFF' }}>
+                {player.totalScore}
+              </div>
+              {useParMode && (
+                <div className="text-sm font-black" style={{ color: '#000' }}>
+                  {getScoreDisplay(player.scoreToPar)}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <button onMouseDown={handleNewGameStart} onMouseUp={handleNewGameEnd} onMouseLeave={handleNewGameEnd}
+      onTouchStart={handleNewGameStart} onTouchEnd={handleNewGameEnd}
+      className="relative w-full px-4 py-3 text-lg font-black flex items-center justify-center gap-2 mt-6 select-none"
+      style={{ WebkitUserSelect: 'none', background: '#EC4899', color: '#000', border: '4px solid #000', borderRadius: '15px', boxShadow: '4px 4px 0px #000', overflow: 'hidden' }}>
+      <div className="absolute inset-0" style={{ background: '#8B5CF6', opacity: newGameProgress / 100 }} />
+      <div className="relative z-10 flex items-center gap-2">
+        <RotateCcw style={{ width: '20px', height: '20px', transform: `rotate(${newGameProgress * 3.6}deg)` }} />
+        {isHoldingNewGame ? 'HOLD TO RESET...' : 'HOLD FOR NEW GAME'}
+      </div>
+    </button>
+  </div>
+</div>
+```
+
+);
+};
+
+export default DiscGolfScorecard;
+        
     </script>
 </body>
 </html>
