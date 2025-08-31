@@ -2,7 +2,7 @@ name: Build and Deploy React App
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]   # run on every push to main
   workflow_dispatch:
 
 permissions:
@@ -27,17 +27,16 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build project
         run: npm run build
 
-      # Detect output folder (Vite=dist, CRA=build) and prepare SPA + .nojekyll
-      - name: Prepare output
+      - name: Prepare output folder
         shell: bash
         run: |
-          if [ -d "dist" ]; then OUT=dist; elif [ -d "build" ]; then OUT=build; else echo "No dist or build folder found"; exit 1; fi
+          if [ -d "dist" ]; then OUT=dist; elif [ -d "build" ]; then OUT=build; else echo "❌ No dist/ or build/ folder found"; exit 1; fi
           echo "BUILD_DIR=$OUT" >> $GITHUB_ENV
           cp "$OUT/index.html" "$OUT/404.html" || true
           touch "$OUT/.nojekyll"
